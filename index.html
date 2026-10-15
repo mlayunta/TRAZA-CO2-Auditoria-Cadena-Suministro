@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TRAZA//CO2 — Auditoría Sostenible</title>
+  <link rel="icon" href="mi_logo.png" type="image/png">
+  <!-- PWA Manifest & Theme Color -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#10b981">
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #eab308;
+      --brand: #10b981;
+    }
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      background: linear-gradient(90deg, #064e3b, #0f172a);
+      border: 1px solid var(--brand);
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+    .header .logo {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--brand);
+      letter-spacing: 1px;
+    }
+    .header .logo span {
+      color: var(--accent);
+    }
+    .header .contact {
+      font-size: 0.82rem;
+      color: var(--muted);
+      text-align: right;
+      line-height: 1.5;
+    }
+    .header .contact b {
+      color: var(--text);
+      display: block;
+      font-size: 0.95rem;
+    }
+    h1 {
+      font-size: 1.2rem;
+      margin: 0 0 4px;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 20px;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .tab {
+      padding: 10px 18px;
+      background: var(--card);
+      border: 1px solid #334155;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .tab.active {
+      background: var(--accent);
+      color: #0f172a;
+      font-weight: 600;
+      border-color: var(--accent);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .header .contact {
+        text-align: left;
+      }
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .card h2 {
+      font-size: 1rem;
+      margin: 0 0 12px;
+      color: var(--accent);
+    }
+    label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin: 8px 0 3px;
+    }
+    input {
+      width: 100%;
+      padding: 8px 10px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+    .btn {
+      margin-top: 16px;
+      padding: 10px 20px;
+      background: var(--brand);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .btn:hover {
+      background: #0f9b68;
+    }
+    .charts {
+      margin-top: 20px;
+    }
+    canvas {
+      max-width: 100%;
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 10px;
+    }
+    .footer {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+      border-top: 1px solid #334155;
+      padding-top: 12px;
+    }
+    .benchmark-info {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+    .sector-select {
+      margin-bottom: 20px;
+    }
+    .kpi-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    .kpi-table th, .kpi-table td {
+      border: 1px solid #334155;
+      padding: 8px;
+      text-align: left;
+    }
+    .kpi-table th {
+      background-color: var(--accent);
+      color: #0f172a;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">TRAZA<span>//</span>CO2</div>
+    <div class="contact">
+      <b>Miguel Ángel Layunta López</b>
+      ✉️ mlayunta.lopez@gmail.com<br>
+      📞 698 910 833 &nbsp;·&nbsp; 📍 Zaragoza
+    </div>
+  </div>
+
+  <h1>Auditoría Sostenible — Cadena de Suministro</h1>
+  <div class="sub">Introduce los datos de cada proceso de la cadena para evaluar sostenibilidad y eficiencia.</div>
+
+  <!-- Selector de sector -->
+  <div class="sector-select">
+    <label for="sector">Selecciona el sector:</label>
+    <select id="sector" onchange="ajustarBenchmarks()">
+      <option value="retail">Retail</option>
+      <option value="gran_distribucion">Gran Distribución</option>
+    </select>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="entrada">📦 Entradas</div>
+    <div class="tab" data-tab="pedidos">📋 Pedidos</div>
+    <div class="tab" data-tab="almacenaje">🏬 Almacenaje</div>
+    <div class="tab" data-tab="entregas">🚚 Entregas</div>
+    <div class="tab" data-tab="transporte">🚛 Transporte</div>
+    <div class="tab" data-tab="trazabilidad">🔍 Trazabilidad</div>
+    <div class="tab" data-tab="inversa">♻️ Logística Inversa</div>
+    <div class="tab" data-tab="social">🌍 Responsabilidad Social</div>
+    <div class="tab" data-tab="sostenibilidad">🌱 Sostenibilidad</div>
+    <div class="tab" data-tab="kpis">📊 KPIs</div>
+  </div>
+
+  <div class="grid">
+    <!-- Entradas -->
+    <div class="card" id="entrada">
+      <h2>📦 Entradas</h2>
+      <label>Volumen recibido (m³)</label>
+      <input type="number" id="volumenRecibido" placeholder="Ej: 1000">
+      <label>Emisiones de transporte (tCO₂e)</label>
+      <input type="number" id="emisionesTransporteEntrada" placeholder="Ej: 12.5">
+      <label>Consumo energético (kWh)</label>
+      <input type="number" id="consumoEnergeticoEntrada" placeholder="Ej: 1500">
+      <button class="btn" onclick="calcularEntrada()">Calcular Indicadores</button>
+      <div class="benchmark-info">Benchmark: Emisiones por unidad ≤ 0.5 tCO₂/m³</div>
+    </div>
+
+    <!-- Pedidos -->
+    <div class="card" id="pedidos" style="display: none;">
+      <h2>📋 Pedidos</h2>
+      <label>Número de pedidos</label>
+      <input type="number" id="numeroPedidos" placeholder="Ej: 500">
+      <label>Pedidos a tiempo (%)</label>
+      <input type="number" id="pedidosATiempo" placeholder="Ej: 95">
+      <button class="btn" onclick="calcularPedidos()">Calcular Indicadores</button>
+      <div class="benchmark-info">Benchmark: Pedidos a tiempo ≥ 90%</div>
+    </div>
+
+    <!-- Almacenaje -->
+    <div class="card" id="almacenaje" style="display: none;">
+      <h2>🏬 Almacenaje</h2>
+      <label>Capacidad de almacenamiento (m³)</label>
+      <input type="number" id="capacidadAlmacenamiento" placeholder="Ej: 20000">
+      <label>Uso de energía (kWh)</label>
+      <input type="number" id="usoEnergiaAlmacenaje" placeholder="Ej: 3000">
+      <button class="btn" onclick="calcularAlmacenaje()">Calcular Indicadores</button>
+      <div class="benchmark-info">Benchmark: Uso de energía ≤ 0.04 kWh/m³</div>
+    </div>
+
+    <!-- Entregas -->
+    <div class="card" id="entregas" style="display: none;">
+      <h2>🚚 Entregas</h2>
+      <label>Km recorridos</label>
+      <input type="number" id="kmRecorridosEntrega" placeholder="Ej: 20000">
+      <label>Emisiones de transporte (tCO₂e)</label>
+      <input type="number" id="emisionesTransporteEntrega" placeholder="Ej: 15.2">
+      <label>Entregas a tiempo (%)</label>
+      <input type="number" id="entregasATiempo" placeholder="Ej: 95">
+      <button class="btn" onclick="calcularEntrega()">Calcular Indicadores</button>
+      <div class="benchmark-info">Benchmark: Emisiones por km ≤ 0.02 tCO₂/km</div>
+    </div>
+
+    <!-- Transporte -->
+    <div class="card" id="transporte" style="display: none;">
+      <h2>🚛 Transporte</h2>
+      <label>Emisiones totales (tCO₂e)</label>
+      <input type="number" id="emisionesTotalesTransporte" placeholder="Ej: 50">
+      <label>Consumo de combustible (litros)</label>
+      <input type="number" id="consumoCombustible" placeholder="Ej: 5000">
+      <button class="btn" onclick="calcularTransporte()">Calcular Indicadores</button>
+      <div class="benchmark-info">Benchmark: Consumo de combustible ≤ 0.1 litros/km</div>
+    </div>
+
+    <!-- Trazabilidad -->
+    <div class="card" id="trazabilidad" style="display: none;">
+      <h2>🔍 Trazabilidad</h2>
+      <label>Porcentaje de trazabilidad (%)</label>
+      <input type="number" id="porcentajeTrazabilidad" placeholder="Ej: 85">
+      <button class="btn" onclick="calcularTrazabilidad()">Calcular Indicadores</button>
+      <div class="benchmark-info">Benchmark: Trazabilidad ≥ 80%</div>
+    </div>
+
+    <!-- Logística Inversa -->
+    <div class="card" id="inversa" style="display: none;">
+      <h2>♻️ Logística Inversa</h2>
+      <label>Volumen devuelto (m³)</label>
+      <input type="number" id="volumenDevuelto" placeholder="Ej: 200">
+      <label>Emisiones de transporte (tCO₂e)</label>
+      <input type="number" id="emisionesTransporteInversa" placeholder="Ej: 5.8">
+      <label>Material reciclado (%)</label>
+      <input type="number" id="materialReciclado" placeholder="Ej: 75">
+      <button class="btn" onclick="calcularInversa()">Calcular Indicadores</button>
+      <div class="benchmark-info">Benchmark: Material reciclado ≥ 70%</div>
+    </div>
+
+    <!-- Responsabilidad Social -->
+    <div class="card" id="social" style="display: none;">
+      <h2>🌍 Responsabilidad Social</h2>
+      <label>Inversión social (€)</label>
+      <input type="number" id="inversionSocial" placeholder="Ej: 10000">
+      <label>Impacto social (%)</label>
+      <input type="number" id="impactoSocial" placeholder="Ej: 75">
+      <button class="btn" onclick="calcularSocial()">Calcular Indicadores</button>
+      <div class="benchmark-info">Benchmark: Impacto social ≥ 70%</div>
+    </div>
+
+    <!-- Sostenibilidad -->
+    <div class="card" id="sostenibilidad" style="display: none;">
+      <h2>🌱 Sostenibilidad</h2>
+      <label>Índice de sostenibilidad (%)</label>
+      <input type="number" id="indiceSostenibilidad" placeholder="Ej: 80">
+      <button class="btn" onclick="calcularSostenibilidad()">Calcular Indicadores</button>
+      <div class="benchmark-info">Benchmark: Índice de sostenibilidad ≥ 75%</div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="card" id="kpis" style="display: none;">
+      <h2>📊 KPIs Aplicados</h2>
+      <table class="kpi-table">
+        <thead>
+          <tr>
+            <th>Proceso</th>
+            <th>KPI</th>
+            <th>Fórmula</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Entradas</td>
+            <td>Emisiones por unidad</td>
+            <td>Emisiones / Volumen recibido</td>
+          </tr>
+          <tr>
+            <td>Pedidos</td>
+            <td>Pedidos a tiempo</td>
+            <td>Pedidos a tiempo / Total de pedidos</td>
+          </tr>
+          <tr>
+            <td>Almacenaje</td>
+            <td>Uso de energía</td>
+            <td>Uso de energía / Capacidad de almacenamiento</td>
+          </tr>
+          <tr>
+            <td>Entregas</td>
+            <td>Emisiones por km</td>
+            <td>Emisiones / Km recorridos</td>
+          </tr>
+          <tr>
+            <td>Transporte</td>
+            <td>Consumo de combustible</td>
+            <td>Consumo de combustible / Km recorridos</td>
+          </tr>
+          <tr>
+            <td>Trazabilidad</td>
+            <td>Porcentaje de trazabilidad</td>
+            <td>Elementos trazables / Total de elementos</td>
+          </tr>
+          <tr>
+            <td>Logística Inversa</td>
+            <td>Material reciclado</td>
+            <td>Material reciclado (%)</td>
+          </tr>
+          <tr>
+            <td>Responsabilidad Social</td>
+            <td>Impacto social</td>
+            <td>Impacto social / Inversión social</td>
+          </tr>
+          <tr>
+            <td>Sostenibilidad</td>
+            <td>Índice de sostenibilidad</td>
+            <td>Evaluación de sostenibilidad (%)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Gráficos -->
+  <div class="charts">
+    <canvas id="chartResultados"></canvas>
+    <canvas id="chartRadar"></canvas>
+    <canvas id="chartLine"></canvas>
+  </div>
+
+  <div class="footer">
+    TRAZA//CO2 · Auditoría Sostenible · Miguel Ángel Layunta López · Zaragoza
+  </div>
+
+  <!-- Botón para generar PDF -->
+  <button class="btn" onclick="generarPDF()">Generar Informe PDF</button>
+
+  <script>
+    // Gráfico de resultados generales (Bar Chart)
+    const chartResultados = new Chart(document.getElementById('chartResultados'), {
+      type: 'bar',
+      data: {
+        labels: ['Entradas', 'Pedidos', 'Almacenaje', 'Entregas', 'Transporte', 'Trazabilidad', 'Logística Inversa', 'Responsabilidad Social', 'Sostenibilidad'],
+        datasets: [{
+          label: 'Indicadores',
+          data: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+          backgroundColor: ['#38bdf8', '#10b981', '#eab308', '#ef4444', '#22c55e', '#f97316', '#3b82f6', '#ec4899', '#8b5cf6']
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { color: '#e2e8f0' },
+            grid: { color: '#334155' }
+          },
+          x: {
+            ticks: { color: '#e2e8f0' },
+            grid: { color: '#334155' }
+          }
+        },
+        plugins: {
+          legend: { labels: { color: '#e2e8f0' } }
+        }
+      }
+    });
+
+    // Radar Chart para dimensiones de sostenibilidad
+    const chartRadar = new Chart(document.getElementById('chartRadar'), {
+      type: 'radar',
+      data: {
+        labels: ['Ambiental', 'Circularidad', 'Eficiencia', 'Social', 'Gobernanza'],
+        datasets: [{
+          label: 'Evaluación (%)',
+          data: [80, 70, 90, 85, 75],
+          backgroundColor: 'rgba(56,189,248,0.25)',
+          borderColor: '#38bdf8',
+          pointBackgroundColor: '#38bdf8'
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          r: {
+            min: 0,
+            max: 100,
+            ticks: { display: false },
+            grid: { color: '#334155' },
+            angleLines: { color: '#334155' },
+            pointLabels: { color: '#94a3b8', font: { size: 10 } }
+          }
+        },
+        plugins: {
+          legend: { labels: { color: '#e2e8f0' } }
+        }
+      }
+    });
+
+    // Line Chart para tendencias
+    const chartLine = new Chart(document.getElementById('chartLine'), {
+      type: 'line',
+      data: {
+        labels: ['2026', '2027', '2028', '2029', '2030'],
+        datasets: [{
+          label: 'Emisiones totales (t CO₂)',
+          data: [50, 45, 40, 35, 30],
+          borderColor: '#38bdf8',
+          backgroundColor: 'rgba(56,189,248,0.25)',
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { color: '#e2e8f0' },
+            grid: { color: '#334155' }
+          },
+          x: {
+            ticks: { color: '#e2e8f0' },
+            grid: { color: '#334155' }
+          }
+        },
+        plugins: {
+          legend: { labels: { color: '#e2e8f0' } }
+        }
+      }
+    });
+
+    // Funciones de cálculo para cada proceso
+    function calcularEntrada() {
+      const volumen = parseFloat(document.getElementById('volumenRecibido').value) || 1;
+      const emisiones = parseFloat(document.getElementById('emisionesTransporteEntrada').value) || 0;
+      const emisionesPorUnidad = emisiones / volumen;
+
+      const benchmark = 0.5;
+      const resultado = emisionesPorUnidad <= benchmark ? 'Cumple' : 'No cumple';
+
+      chartResultados.data.datasets[0].data[0] = emisionesPorUnidad;
+      chartResultados.update();
+      alert(`Indicadores calculados para Entradas: ${resultado}`);
+    }
+
+    function calcularPedidos() {
+      const pedidosATiempo = parseFloat(document.getElementById('pedidosATiempo').value) || 0;
+      const numeroPedidos = parseFloat(document.getElementById('numeroPedidos').value) || 1;
+      const pedidosCumplidos = pedidosATiempo / numeroPedidos;
+
+      const benchmark = 0.9;
+      const resultado = pedidosCumplidos >= benchmark ? 'Cumple' : 'No cumple';
+
+      chartResultados.data.datasets[0].data[1] = pedidosCumplidos;
+      chartResultados.update();
+      alert(`Indicadores calculados para Pedidos: ${resultado}`);
+    }
+
+    function calcularAlmacenaje() {
+      const capacidad = parseFloat(document.getElementById('capacidadAlmacenamiento').value) || 1;
+      const energia = parseFloat(document.getElementById('usoEnergiaAlmacenaje').value) || 0;
+      const usoEnergia = energia / capacidad;
+
+      const benchmark = 0.04;
+      const resultado = usoEnergia <= benchmark ? 'Cumple' : 'No cumple';
+
+      chartResultados.data.datasets[0].data[2] = usoEnergia;
+      chartResultados.update();
+      alert(`Indicadores calculados para Almacenaje: ${resultado}`);
+    }
+
+    function calcularEntrega() {
+      const km = parseFloat(document.getElementById('kmRecorridosEntrega').value) || 1;
+      const emisiones = parseFloat(document.getElementById('emisionesTransporteEntrega').value) || 0;
+      const emisionesPorKm = emisiones / km;
+
+      const benchmark = 0.02;
+      const resultado = emisionesPorKm <= benchmark ? 'Cumple' : 'No cumple';
+
+      chartResultados.data.datasets[0].data[3] = emisionesPorKm;
+      chartResultados.update();
+      alert(`Indicadores calculados para Entregas: ${resultado}`);
+    }
+
+    function calcularTransporte() {
+      const consumo = parseFloat(document.getElementById('consumoCombustible').value) || 0;
+      const km = parseFloat(document.getElementById('kmRecorridosEntrega').value) || 1;
+      const consumoPorKm = consumo / km;
+
+      const benchmark = 0.1;
+      const resultado = consumoPorKm <= benchmark ? 'Cumple' : 'No cumple';
+
+      chartResultados.data.datasets[0].data[4] = consumoPorKm;
+      chartResultados.update();
+      alert(`Indicadores calculados para Transporte: ${resultado}`);
+    }
+
+    function calcularTrazabilidad() {
+      const trazabilidad = parseFloat(document.getElementById('porcentajeTrazabilidad').value) || 0;
+
+      const benchmark = 0.8;
+      const resultado = trazabilidad >= benchmark ? 'Cumple' : 'No cumple';
+
+      chartResultados.data.datasets[0].data[5] = trazabilidad;
+      chartResultados.update();
+      alert(`Indicadores calculados para Trazabilidad: ${resultado}`);
+    }
+
+    function calcularInversa() {
+      const materialReciclado = parseFloat(document.getElementById('materialReciclado').value) || 0;
+
+      const benchmark = 0.7;
+      const resultado = materialReciclado >= benchmark ? 'Cumple' : 'No cumple';
+
+      chartResultados.data.datasets[0].data[6] = materialReciclado;
+      chartResultados.update();
+      alert(`Indicadores calculados para Logística Inversa: ${resultado}`);
+    }
+
+    function calcularSocial() {
+      const impacto = parseFloat(document.getElementById('impactoSocial').value) || 0;
+
+      const benchmark = 0.7;
+      const resultado = impacto >= benchmark ? 'Cumple' : 'No cumple';
+
+      chartResultados.data.datasets[0].data[7] = impacto;
+      chartResultados.update();
+      alert(`Indicadores calculados para Responsabilidad Social: ${resultado}`);
+    }
+
+    function calcularSostenibilidad() {
+      const sostenibilidad = parseFloat(document.getElementById('indiceSostenibilidad').value) || 0;
+
+      const benchmark = 0.75;
+      const resultado = sostenibilidad >= benchmark ? 'Cumple' : 'No cumple';
+
+      chartResultados.data.datasets[0].data[8] = sostenibilidad;
+      chartResultados.update();
+      alert(`Indicadores calculados para Sostenibilidad: ${resultado}`);
+    }
+
+    // Función para ajustar benchmarks según el sector
+    function ajustarBenchmarks() {
+      const sector = document.getElementById('sector').value;
+
+      let benchmarks = {
+        retail: {
+          emisionesPorUnidad: 0.5,
+          eficienciaEnergetica: 0.05,
+          emisionesPorKm: 0.02,
+          materialReciclado: 70
+        },
+        gran_distribucion: {
+          emisionesPorUnidad: 0.6,
+          eficienciaEnergetica: 0.07,
+          emisionesPorKm: 0.03,
+          materialReciclado: 65
+        }
+      };
+
+      const sectorBenchmarks = benchmarks[sector];
+
+      document.querySelector('#entrada .benchmark-info').textContent = `Benchmark: Emisiones por unidad ≤ ${sectorBenchmarks.emisionesPorUnidad} tCO₂/m³`;
+      document.querySelector('#entrega .benchmark-info').textContent = `Benchmark: Emisiones por km ≤ ${sectorBenchmarks.emisionesPorKm} tCO₂/km`;
+      document.querySelector('#inversa .benchmark-info').textContent = `Benchmark: Material reciclado ≥ ${sectorBenchmarks.materialReciclado}%`;
+    }
+
+    // Función para generar el PDF
+    async function generarPDF() {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF();
+
+      pdf.setFontSize(16);
+      pdf.setTextColor(0, 102, 204);
+      pdf.text('Informe de Sostenibilidad - TRAZA//CO2', 105, 20, { align: 'center' });
+
+      pdf.autoTable({
+        startY: 30,
+        head: [['Proceso', 'Indicadores']],
+        body: [
+          ['Entradas', chartResultados.data.datasets[0].data[0]],
+          ['Pedidos', chartResultados.data.datasets[0].data[1]],
+          ['Almacenaje', chartResultados.data.datasets[0].data[2]],
+          ['Entregas', chartResultados.data.datasets[0].data[3]],
+          ['Transporte', chartResultados.data.datasets[0].data[4]],
+          ['Trazabilidad', chartResultados.data.datasets[0].data[5]],
+          ['Logística Inversa', chartResultados.data.datasets[0].data[6]],
+          ['Responsabilidad Social', chartResultados.data.datasets[0].data[7]],
+          ['Sostenibilidad', chartResultados.data.datasets[0].data[8]],
+        ],
+        headStyles: { fillColor: [0, 153, 51] },
+      });
+
+      const canvas = document.getElementById('chartResultados');
+      const imgDataChart = canvas.toDataURL('image/png');
+      pdf.addImage(imgDataChart, 'PNG', 10, pdf.lastAutoTable.finalY + 10, 180, 80);
+
+      pdf.save('TRAZA_CO2_Informe.pdf');
+    }
+
+    // Cambiar entre pestañas
+    const tabs = document.querySelectorAll('.tab');
+    const sections = document.querySelectorAll('.card');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        sections.forEach(section => section.style.display = 'none');
+        document.getElementById(tab.dataset.tab).style.display = 'block';
+      });
+    });
+
+    document.addEventListener('DOMContentLoaded', ajustarBenchmarks);
+  </script>
+
+  <!-- Script de Registro del Service Worker para PWA -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker registrado con éxito:', reg))
+          .catch(err => console.log('Error al registrar el Service Worker:', err));
+      });
+    }
+  </script>
+</body>
+</html>
